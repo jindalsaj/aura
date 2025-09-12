@@ -129,14 +129,42 @@ const Chat: React.FC = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Chat with Aura
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Ask me anything about your properties, expenses, or documents
-      </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Ask me anything about your properties, expenses, or documents
+          </Typography>
+          
+          <Alert severity="success" sx={{ mb: 2 }}>
+            🤖 <strong>Powered by Google Gemini:</strong> Aura uses Google's free Gemini AI for intelligent responses. 
+            Your data is analyzed with state-of-the-art AI while maintaining privacy and zero costs.
+          </Alert>
 
       {messages.length === 0 && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Start by asking me about your properties or connecting your data sources to get more personalized responses.
-        </Alert>
+        <Box sx={{ mb: 3 }}>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Start by asking me about your properties or connecting your data sources to get more personalized responses.
+          </Alert>
+          
+          <Typography variant="h6" gutterBottom>
+            Try asking:
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {[
+              "Show me my recent emails",
+              "What documents do I have?",
+              "Tell me about my properties",
+              "What are my recent expenses?",
+              "Give me a summary of my data"
+            ].map((suggestion, index) => (
+              <Chip
+                key={index}
+                label={suggestion}
+                onClick={() => setInputMessage(suggestion)}
+                variant="outlined"
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Box>
+        </Box>
       )}
 
       <Paper
@@ -202,17 +230,27 @@ const Chat: React.FC = () => {
                   </Typography>
                   {message.metadata?.sources && message.metadata.sources.length > 0 && (
                     <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                         Sources:
                       </Typography>
-                      {message.metadata.sources.map((source: any, index: number) => (
-                        <Chip
-                          key={index}
-                          label={source.title || source.type}
-                          size="small"
-                          sx={{ ml: 1, mb: 0.5 }}
-                        />
-                      ))}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {message.metadata.sources.map((source: any, index: number) => (
+                          <Chip
+                            key={index}
+                            label={typeof source === 'string' ? source : `${source.type}: ${source.description}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  {message.metadata?.confidence && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Confidence: {Math.round(message.metadata.confidence * 100)}%
+                      </Typography>
                     </Box>
                   )}
                 </Paper>

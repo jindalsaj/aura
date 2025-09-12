@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 const RootHandler: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,8 +36,8 @@ const RootHandler: React.FC = () => {
           const { access_token } = response.data;
           localStorage.setItem('access_token', access_token);
 
-          // Redirect to dashboard
-          navigate('/app/dashboard');
+          // Force a page reload to refresh the auth context
+          window.location.href = '/app/dashboard';
         } catch (err: any) {
           console.error('Auth callback error:', err);
           setError(err.response?.data?.detail || 'Authentication failed');

@@ -36,7 +36,9 @@ class Settings(BaseSettings):
     
     # LLM (will be configured later)
     OPENAI_API_KEY: str = ""
+    OPENAI_ORG_ID: str = ""  # Optional: Set this if you have an OpenAI organization
     ANTHROPIC_API_KEY: str = ""
+    GOOGLE_GEMINI_API_KEY: str = ""  # Free tier available for developers
     
     class Config:
         env_file = ".env"

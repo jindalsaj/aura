@@ -31,23 +31,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        try {
+          // Verify token and get user info
+          const response = await api.get('/api/auth/me');
+          setUser(response.data);
+        } catch (error) {
+          localStorage.removeItem('access_token');
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    // Listen for storage changes (when token is set from another tab/window)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'access_token') {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Also check auth when the component mounts and token exists
+  useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      // Verify token and get user info
+    if (token && !user && !loading) {
       api.get('/api/auth/me')
         .then(response => {
           setUser(response.data);
         })
         .catch(() => {
           localStorage.removeItem('access_token');
-        })
-        .finally(() => {
-          setLoading(false);
         });
-    } else {
-      setLoading(false);
     }
-  }, []);
+  }, [user, loading]);
 
   const login = async (credentials: LoginCredentials) => {
     const formData = new FormData();

@@ -11,6 +11,7 @@ from app.schemas import (
     ChatMessage as ChatMessageSchema
 )
 from app.core.security import get_current_user
+from app.services.chat_service import chat_service
 
 router = APIRouter()
 
@@ -60,9 +61,6 @@ def chat_query(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # TODO: Implement LLM integration and query processing
-    # For now, return a placeholder response
-    
     # Create user message
     if query.session_id:
         user_message = ChatMessage(
@@ -73,25 +71,53 @@ def chat_query(
         db.add(user_message)
         db.commit()
     
-    # Placeholder response (will be replaced with actual LLM integration)
-    response = ChatResponse(
-        response="I understand you're asking about your properties and expenses. I'm still learning about your data. Please connect your data sources to get started!",
-        sources=[],
-        confidence=0.0
-    )
-    
-    # Create assistant message
-    if query.session_id:
-        assistant_message = ChatMessage(
-            session_id=query.session_id,
-            role="assistant",
-            content=response.response,
-            meta_data={"sources": response.sources, "confidence": response.confidence}
+    # Process query using chat service
+    try:
+        result = chat_service.process_query(current_user.id, query.message)
+        
+        response = ChatResponse(
+            response=result["response"],
+            sources=result["sources"],
+            confidence=result["confidence"]
         )
-        db.add(assistant_message)
-        db.commit()
-    
-    return response
+        
+        # Create assistant message
+        if query.session_id:
+            assistant_message = ChatMessage(
+                session_id=query.session_id,
+                role="assistant",
+                content=response.response,
+                meta_data={
+                    "sources": response.sources, 
+                    "confidence": response.confidence,
+                    "intent": result.get("intent", "unknown")
+                }
+            )
+            db.add(assistant_message)
+            db.commit()
+        
+        return response
+        
+    except Exception as e:
+        # Fallback response
+        response = ChatResponse(
+            response=f"I encountered an error processing your query: {str(e)}",
+            sources=[],
+            confidence=0.0
+        )
+        
+        # Create assistant message
+        if query.session_id:
+            assistant_message = ChatMessage(
+                session_id=query.session_id,
+                role="assistant",
+                content=response.response,
+                meta_data={"sources": response.sources, "confidence": response.confidence, "error": str(e)}
+            )
+            db.add(assistant_message)
+            db.commit()
+        
+        return response
 
 @router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageSchema])
 def get_chat_messages(
