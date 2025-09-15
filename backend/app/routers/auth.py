@@ -85,6 +85,7 @@ async def google_callback(auth_request: GoogleAuthRequest, db: Session = Depends
                 db_user.google_id = user_info.id
                 db_user.name = user_info.name
                 db_user.picture = user_info.picture
+                db.commit()  # Commit user updates
             else:
                 logger.info("Creating new user...")
                 # Create new user
@@ -96,11 +97,24 @@ async def google_callback(auth_request: GoogleAuthRequest, db: Session = Depends
                     hashed_password=None  # No password for OAuth users
                 )
                 db.add(db_user)
+                db.commit()  # Commit to get the user ID
+                db.refresh(db_user)  # Refresh to get the ID
         else:
             logger.info("User found by Google ID, updating info...")
             # Update user info
             db_user.name = user_info.name
             db_user.picture = user_info.picture
+            db.commit()  # Commit user updates
+        
+        # Ensure we have a valid user ID
+        if not db_user.id:
+            logger.error("User ID is None after user creation/update")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account"
+            )
+        
+        logger.info(f"User ID: {db_user.id}, Email: {db_user.email}")
         
         # Store Google OAuth tokens for Gmail and Drive access
         from app.models import DataSource
@@ -161,6 +175,7 @@ async def google_callback(auth_request: GoogleAuthRequest, db: Session = Depends
         
     except Exception as e:
         logger.error(f"Google OAuth callback error: {e}")
+        db.rollback()  # Rollback any partial changes
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication failed"

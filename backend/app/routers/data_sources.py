@@ -131,7 +131,7 @@ def sync_gmail_data(
     db.commit()
     
     # Start background sync
-    background_tasks.add_task(gmail_service.sync_emails, current_user.id)
+    background_tasks.add_task(gmail_service.sync_emails_sync, current_user.id)
     
     return {"message": "Gmail sync started in background"}
 
@@ -161,7 +161,7 @@ def sync_drive_data(
     db.commit()
     
     # Start background sync
-    background_tasks.add_task(drive_service.sync_files, current_user.id)
+    background_tasks.add_task(drive_service.sync_files_sync, current_user.id)
     
     return {"message": "Google Drive sync started in background"}
 

@@ -18,6 +18,7 @@ from app.models import User, DataSource, Message, Document
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from email.utils import parsedate_to_datetime
+from app.services.relevance_filter import relevance_filter
 
 
 class GmailService:
@@ -227,6 +228,50 @@ class GmailService:
             print(f"Error fetching emails: {e}")
             return []
     
+    def fetch_emails_with_attachments(self, user_id: int) -> List[Dict[str, Any]]:
+        """Fetch emails that have attachments"""
+        try:
+            creds = self.get_credentials(user_id)
+            if not creds:
+                return []
+            
+            service = build('gmail', 'v1', credentials=creds)
+            
+            # Build query for emails with attachments
+            query = 'in:inbox has:attachment'
+            
+            results = service.users().messages().list(
+                userId='me',
+                q=query,
+                maxResults=200  # More results for attachments
+            ).execute()
+            
+            messages = results.get('messages', [])
+            email_data = []
+            
+            for msg in messages:
+                try:
+                    # Get full message details
+                    message = service.users().messages().get(
+                        userId='me',
+                        id=msg['id'],
+                        format='full'
+                    ).execute()
+                    
+                    # Extract email data
+                    email_info = self._extract_email_data(message)
+                    email_data.append(email_info)
+                    
+                except HttpError as e:
+                    print(f"Error fetching message {msg['id']}: {e}")
+                    continue
+            
+            return email_data
+            
+        except Exception as e:
+            print(f"Error fetching emails with attachments: {e}")
+            return []
+    
     def _extract_email_data(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Extract relevant data from Gmail message"""
         payload = message['payload']
@@ -389,10 +434,10 @@ class GmailService:
         finally:
             db.close()
     
-    def sync_emails(self, user_id: int):
-        """Sync emails for a user (background task)"""
+    async def sync_emails(self, user_id: int, days_back: Optional[int] = None, attachments_only: bool = False):
+        """Sync emails for a user with various options"""
         try:
-            print(f"Starting Gmail sync for user {user_id}")
+            print(f"Starting Gmail sync for user {user_id} - days_back: {days_back}, attachments_only: {attachments_only}")
             
             # Get user's Gmail data source
             db = next(get_db())
@@ -412,13 +457,24 @@ class GmailService:
                 data_source.sync_progress = 10
                 db.commit()
                 
-                # Fetch emails
-                emails = self.fetch_recent_emails(user_id, days=7)
+                # Fetch emails based on options
+                if attachments_only:
+                    emails = self.fetch_emails_with_attachments(user_id)
+                elif days_back:
+                    emails = self.fetch_recent_emails(user_id, days=days_back)
+                else:
+                    emails = self.fetch_recent_emails(user_id, days=365)  # All emails
+                
                 data_source.sync_progress = 50
                 db.commit()
                 
-                # Store emails
-                self.store_emails_in_db(user_id, emails)
+                # Filter emails for property relevance
+                print(f"Filtering {len(emails)} emails for property relevance...")
+                relevant_emails = await relevance_filter.filter_emails_for_properties(user_id, emails)
+                print(f"Found {len(relevant_emails)} property-relevant emails")
+                
+                # Store only relevant emails
+                self.store_emails_in_db(user_id, relevant_emails)
                 data_source.sync_progress = 90
                 db.commit()
                 
@@ -428,7 +484,7 @@ class GmailService:
                 data_source.last_sync = func.now()
                 db.commit()
                 
-                print(f"Gmail sync completed for user {user_id}")
+                print(f"Gmail sync completed for user {user_id} - {len(emails)} emails synced")
                 
             finally:
                 db.close()
@@ -449,6 +505,11 @@ class GmailService:
                 db.close()
             except:
                 pass
+    
+    def sync_emails_sync(self, user_id: int, days_back: Optional[int] = None, attachments_only: bool = False):
+        """Synchronous wrapper for sync_emails to be used with background tasks"""
+        import asyncio
+        asyncio.run(self.sync_emails(user_id, days_back, attachments_only))
 
 
 # Global instance

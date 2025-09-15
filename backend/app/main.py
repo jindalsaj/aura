@@ -6,7 +6,7 @@ import uvicorn
 
 from app.database import get_db, engine
 from app.models import Base
-from app.routers import auth, properties, data_sources, chat, gmail, plaid, whatsapp, drive, entity_extraction
+from app.routers import auth, properties, data_sources, chat, gmail, plaid, whatsapp, drive, entity_extraction, onboarding
 from app.core.config import settings
 
 # Create database tables
@@ -37,6 +37,7 @@ app.include_router(plaid.router, prefix="/api/plaid", tags=["plaid"])
 app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["whatsapp"])
 app.include_router(drive.router, prefix="/api/drive", tags=["drive"])
 app.include_router(entity_extraction.router, prefix="/api/entities", tags=["entity-extraction"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 
 @app.get("/")
 async def root():

@@ -1,8 +1,12 @@
 export interface User {
   id: number;
   email: string;
+  name?: string;
+  picture?: string;
+  google_id?: string;
   is_active: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Property {

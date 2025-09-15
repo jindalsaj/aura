@@ -11,6 +11,7 @@ import Dashboard from './components/Dashboard';
 import Chat from './components/Chat';
 import Properties from './components/Properties';
 import DataSources from './components/DataSources';
+import Onboarding from './components/Onboarding';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -56,6 +57,11 @@ function App() {
               <Route path="properties" element={<Properties />} />
               <Route path="data-sources" element={<DataSources />} />
             </Route>
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </AuthProvider>

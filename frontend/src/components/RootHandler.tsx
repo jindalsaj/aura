@@ -37,7 +37,24 @@ const RootHandler: React.FC = () => {
           localStorage.setItem('access_token', access_token);
 
           // Force a page reload to refresh the auth context
-          window.location.href = '/app/dashboard';
+          // Check if user has properties to determine if they need onboarding
+          try {
+            const userResponse = await api.get('/api/auth/me');
+            const userData = userResponse.data;
+            
+            // Check if user has properties (simple onboarding check)
+            const propertiesResponse = await api.get('/api/onboarding/properties');
+            const hasProperties = propertiesResponse.data && propertiesResponse.data.length > 0;
+            
+            if (hasProperties) {
+              window.location.href = '/app/dashboard';
+            } else {
+              window.location.href = '/onboarding';
+            }
+          } catch (err) {
+            // If we can't check properties, default to onboarding
+            window.location.href = '/onboarding';
+          }
         } catch (err: any) {
           console.error('Auth callback error:', err);
           setError(err.response?.data?.detail || 'Authentication failed');

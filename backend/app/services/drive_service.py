@@ -19,6 +19,7 @@ from app.database import get_db
 from app.models import User, DataSource, Document
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
+from app.services.relevance_filter import relevance_filter
 
 
 class DriveService:
@@ -212,6 +213,85 @@ class DriveService:
             print(f"Error fetching files: {e}")
             return []
     
+    def fetch_selected_files(self, user_id: int, selected_items: List[str]) -> List[Dict[str, Any]]:
+        """Fetch specific files and folders from Google Drive"""
+        try:
+            service = self.get_service(user_id)
+            if not service:
+                return []
+            
+            file_data = []
+            
+            for item_id in selected_items:
+                try:
+                    # Get file metadata
+                    file = service.files().get(
+                        fileId=item_id,
+                        fields='id,name,mimeType,size,modifiedTime,createdTime,webViewLink,parents'
+                    ).execute()
+                    
+                    file_info = {
+                        'id': file['id'],
+                        'name': file['name'],
+                        'mime_type': file['mimeType'],
+                        'size': int(file.get('size', 0)),
+                        'modified_time': file['modifiedTime'],
+                        'created_time': file['createdTime'],
+                        'web_view_link': file.get('webViewLink'),
+                        'parents': file.get('parents', [])
+                    }
+                    file_data.append(file_info)
+                    
+                    # If it's a folder, fetch its contents
+                    if file['mimeType'] == 'application/vnd.google-apps.folder':
+                        folder_files = self.fetch_folder_contents(user_id, item_id)
+                        file_data.extend(folder_files)
+                        
+                except HttpError as e:
+                    print(f"Error fetching file {item_id}: {e}")
+                    continue
+            
+            return file_data
+            
+        except Exception as e:
+            print(f"Error fetching selected files: {e}")
+            return []
+    
+    def fetch_folder_contents(self, user_id: int, folder_id: str) -> List[Dict[str, Any]]:
+        """Fetch contents of a specific folder"""
+        try:
+            service = self.get_service(user_id)
+            if not service:
+                return []
+            
+            results = service.files().list(
+                q=f"'{folder_id}' in parents and trashed=false",
+                fields='files(id,name,mimeType,size,modifiedTime,createdTime,webViewLink,parents)',
+                pageSize=100
+            ).execute()
+            
+            files = results.get('files', [])
+            file_data = []
+            
+            for file in files:
+                file_info = {
+                    'id': file['id'],
+                    'name': file['name'],
+                    'mime_type': file['mimeType'],
+                    'size': int(file.get('size', 0)),
+                    'modified_time': file['modifiedTime'],
+                    'created_time': file['createdTime'],
+                    'web_view_link': file.get('webViewLink'),
+                    'parents': file.get('parents', [])
+                }
+                file_data.append(file_info)
+            
+            return file_data
+            
+        except Exception as e:
+            print(f"Error fetching folder contents: {e}")
+            return []
+    
     def download_file_content(self, user_id: int, file_id: str) -> bytes:
         """Download file content from Google Drive"""
         try:
@@ -366,10 +446,10 @@ class DriveService:
         finally:
             db.close()
     
-    def sync_files(self, user_id: int):
-        """Sync files for a user (background task)"""
+    async def sync_files(self, user_id: int, selected_items: Optional[List[str]] = None):
+        """Sync files for a user with optional item selection"""
         try:
-            print(f"Starting Drive sync for user {user_id}")
+            print(f"Starting Drive sync for user {user_id} - selected_items: {selected_items}")
             
             # Get user's Drive data source
             db = next(get_db())
@@ -389,13 +469,22 @@ class DriveService:
                 data_source.sync_progress = 10
                 db.commit()
                 
-                # Fetch files
-                files = self.fetch_recent_files(user_id, days=7)
+                # Fetch files based on selection
+                if selected_items:
+                    files = self.fetch_selected_files(user_id, selected_items)
+                else:
+                    files = self.fetch_recent_files(user_id, days=30)
+                
                 data_source.sync_progress = 50
                 db.commit()
                 
-                # Store files
-                self.store_files_in_db(user_id, files)
+                # Filter files for property relevance
+                print(f"Filtering {len(files)} files for property relevance...")
+                relevant_files = await relevance_filter.filter_documents_for_properties(user_id, files)
+                print(f"Found {len(relevant_files)} property-relevant files")
+                
+                # Store only relevant files
+                self.store_files_in_db(user_id, relevant_files)
                 data_source.sync_progress = 90
                 db.commit()
                 
@@ -405,7 +494,7 @@ class DriveService:
                 data_source.last_sync = func.now()
                 db.commit()
                 
-                print(f"Drive sync completed for user {user_id}")
+                print(f"Drive sync completed for user {user_id} - {len(files)} files synced")
                 
             finally:
                 db.close()
@@ -426,6 +515,11 @@ class DriveService:
                 db.close()
             except:
                 pass
+    
+    def sync_files_sync(self, user_id: int, selected_items: Optional[List[str]] = None):
+        """Synchronous wrapper for sync_files to be used with background tasks"""
+        import asyncio
+        asyncio.run(self.sync_files(user_id, selected_items))
 
 
 # Global instance
