@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     PLAID_CLIENT_ID: str = ""
     PLAID_SECRET: str = ""
-    PLAID_ENVIRONMENT: str = "sandbox"  # sandbox, development, production
+    PLAID_ENV: str = "sandbox"  # sandbox, development, production
     
     # WhatsApp
     WHATSAPP_ACCESS_TOKEN: str = ""

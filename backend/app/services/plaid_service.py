@@ -29,7 +29,7 @@ class PlaidService:
         }
         
         self.configuration = Configuration(
-            host=env_map.get(settings.PLAID_ENVIRONMENT, plaid.Environment.Sandbox),
+            host=env_map.get(settings.PLAID_ENV, plaid.Environment.Sandbox),
             api_key={
                 'clientId': settings.PLAID_CLIENT_ID,
                 'secret': settings.PLAID_SECRET
