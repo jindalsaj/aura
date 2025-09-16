@@ -27,7 +27,10 @@ class Property(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    address = Column(Text, nullable=False)
+    street = Column(String, nullable=False)
+    city = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    country = Column(String, nullable=False)
     property_type = Column(String)  # apartment, house, condo, etc.
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

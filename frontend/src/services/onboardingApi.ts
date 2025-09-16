@@ -3,7 +3,10 @@ import api from './api';
 export interface Property {
   id?: string;
   name: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
   property_type?: string;
 }
 

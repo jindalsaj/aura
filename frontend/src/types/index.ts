@@ -12,7 +12,10 @@ export interface User {
 export interface Property {
   id: number;
   name: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
   property_type?: string;
   user_id: number;
   created_at: string;

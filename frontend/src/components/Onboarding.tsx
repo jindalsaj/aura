@@ -13,6 +13,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Grid,
   Checkbox,
   FormGroup,
   Card,
@@ -45,7 +46,10 @@ import { onboardingApi } from '../services/onboardingApi';
 interface Property {
   id: string;
   name: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
 }
 
 interface GmailSyncOption {
@@ -72,7 +76,7 @@ const Onboarding: React.FC = () => {
   
   // Property management
   const [properties, setProperties] = useState<Property[]>([
-    { id: '1', name: '', address: '' }
+    { id: '1', name: '', street: '', city: '', state: '', country: '' }
   ]);
   
   // Service selection
@@ -164,7 +168,10 @@ const Onboarding: React.FC = () => {
     const newProperty: Property = {
       id: Date.now().toString(),
       name: '',
-      address: ''
+      street: '',
+      city: '',
+      state: '',
+      country: ''
     };
     setProperties([...properties, newProperty]);
   };
@@ -198,7 +205,10 @@ const Onboarding: React.FC = () => {
         await onboardingApi.saveProperties({
           properties: properties.map(p => ({
             name: p.name,
-            address: p.address,
+            street: p.street,
+            city: p.city,
+            state: p.state,
+            country: p.country,
             property_type: 'apartment' // Default type
           }))
         });
@@ -226,7 +236,7 @@ const Onboarding: React.FC = () => {
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {
       case 0:
-        return properties.every(p => p.name.trim() && p.address.trim());
+        return properties.every(p => p.name.trim() && p.street.trim() && p.city.trim() && p.state.trim() && p.country.trim());
       case 1:
         return selectedServices.length > 0;
       case 2:
@@ -246,7 +256,10 @@ const Onboarding: React.FC = () => {
       await onboardingApi.startSync({
         properties: properties.map(p => ({
           name: p.name,
-          address: p.address,
+          street: p.street,
+          city: p.city,
+          state: p.state,
+          country: p.country,
           property_type: 'apartment' // Default type
         })),
         selected_services: selectedServices,
@@ -379,12 +392,43 @@ const Onboarding: React.FC = () => {
                   
                   <TextField
                     fullWidth
-                    label="Address"
-                    placeholder="123 Main St, City, State, ZIP"
-                    value={property.address}
-                    onChange={(e) => updateProperty(property.id, 'address', e.target.value)}
-                    multiline
-                    rows={2}
+                    label="Street Address"
+                    placeholder="123 Main St"
+                    value={property.street}
+                    onChange={(e) => updateProperty(property.id, 'street', e.target.value)}
+                    sx={{ mb: 2 }}
+                  />
+                  
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="City"
+                        placeholder="New York"
+                        value={property.city}
+                        onChange={(e) => updateProperty(property.id, 'city', e.target.value)}
+                        sx={{ mb: 2 }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="State"
+                        placeholder="NY"
+                        value={property.state}
+                        onChange={(e) => updateProperty(property.id, 'state', e.target.value)}
+                        sx={{ mb: 2 }}
+                      />
+                    </Grid>
+                  </Grid>
+                  
+                  <TextField
+                    fullWidth
+                    label="Country"
+                    placeholder="United States"
+                    value={property.country}
+                    onChange={(e) => updateProperty(property.id, 'country', e.target.value)}
+                    sx={{ mb: 2 }}
                   />
                 </CardContent>
               </Card>

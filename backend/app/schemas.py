@@ -40,7 +40,10 @@ class Token(BaseModel):
 # Property schemas
 class PropertyBase(BaseModel):
     name: str
-    address: str
+    street: str
+    city: str
+    state: str
+    country: str
     property_type: Optional[str] = None
 
 class PropertyCreate(PropertyBase):
@@ -57,7 +60,10 @@ class Property(PropertyBase):
 
 class PropertyUpdate(BaseModel):
     name: Optional[str] = None
-    address: Optional[str] = None
+    street: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
     property_type: Optional[str] = None
 
 # Onboarding schemas

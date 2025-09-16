@@ -13,7 +13,6 @@ import {
 import {
   Home as HomeIcon,
   Storage as StorageIcon,
-  Chat as ChatIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -109,47 +108,6 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* Quick Actions */}
-        <Grid size={{ xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid>
-                  <Button
-                    variant="contained"
-                    startIcon={<ChatIcon />}
-                    onClick={() => navigate('/chat')}
-                    sx={{ mr: 2 }}
-                  >
-                    Start Chat
-                  </Button>
-                </Grid>
-                <Grid>
-                  <Button
-                    variant="outlined"
-                    startIcon={<HomeIcon />}
-                    onClick={() => navigate('/properties')}
-                    sx={{ mr: 2 }}
-                  >
-                    Add Property
-                  </Button>
-                </Grid>
-                <Grid>
-                  <Button
-                    variant="outlined"
-                    startIcon={<StorageIcon />}
-                    onClick={() => navigate('/data-sources')}
-                  >
-                    Connect Data
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
 
         {/* Recent Properties */}
         {properties.length > 0 && (
@@ -168,7 +126,8 @@ const Dashboard: React.FC = () => {
                             {property.name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {property.address}
+                            {property.street}<br />
+                            {property.city}, {property.state} {property.country}
                           </Typography>
                           {property.property_type && (
                             <Chip

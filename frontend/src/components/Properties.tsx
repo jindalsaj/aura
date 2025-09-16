@@ -31,7 +31,10 @@ const Properties: React.FC = () => {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
+    street: '',
+    city: '',
+    state: '',
+    country: '',
     property_type: '',
   });
 
@@ -55,14 +58,20 @@ const Properties: React.FC = () => {
       setEditingProperty(property);
       setFormData({
         name: property.name,
-        address: property.address,
+        street: property.street,
+        city: property.city,
+        state: property.state,
+        country: property.country,
         property_type: property.property_type || '',
       });
     } else {
       setEditingProperty(null);
       setFormData({
         name: '',
-        address: '',
+        street: '',
+        city: '',
+        state: '',
+        country: '',
         property_type: '',
       });
     }
@@ -74,7 +83,10 @@ const Properties: React.FC = () => {
     setEditingProperty(null);
     setFormData({
       name: '',
-      address: '',
+      street: '',
+      city: '',
+      state: '',
+      country: '',
       property_type: '',
     });
   };
@@ -167,7 +179,8 @@ const Properties: React.FC = () => {
                     </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
-                    {property.address}
+                    {property.street}<br />
+                    {property.city}, {property.state} {property.country}
                   </Typography>
                   {property.property_type && (
                     <Chip
@@ -203,13 +216,41 @@ const Properties: React.FC = () => {
             />
             <TextField
               margin="dense"
-              label="Address"
+              label="Street Address"
               fullWidth
               variant="outlined"
-              multiline
-              rows={3}
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              value={formData.street}
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="City"
+              fullWidth
+              variant="outlined"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="State"
+              fullWidth
+              variant="outlined"
+              value={formData.state}
+              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="Country"
+              fullWidth
+              variant="outlined"
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
               required
               sx={{ mb: 2 }}
             />
