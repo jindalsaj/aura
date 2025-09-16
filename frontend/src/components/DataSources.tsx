@@ -13,6 +13,16 @@ import {
   Alert,
   LinearProgress,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -25,10 +35,24 @@ import {
 import api from '../services/api';
 import { DataSource } from '../types';
 
+interface DriveItem {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  mimeType: string;
+  size: string;
+  modifiedTime: string;
+  webViewLink: string;
+  parents: string[];
+}
+
 const DataSources: React.FC = () => {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<Record<string, any>>({});
+  const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
+  const [selectedDriveItems, setSelectedDriveItems] = useState<string[]>([]);
+  const [showDriveSelection, setShowDriveSelection] = useState(false);
 
   const sourceTypes = [
     {
@@ -100,6 +124,15 @@ const DataSources: React.FC = () => {
     }
   };
 
+  const fetchDriveItems = async () => {
+    try {
+      const response = await api.get('/api/data-sources/drive/items');
+      setDriveItems(response.data.items);
+    } catch (error) {
+      console.error('Error fetching Drive items:', error);
+    }
+  };
+
   const handleSync = async (sourceType: string) => {
     try {
       let response;
@@ -109,8 +142,10 @@ const DataSources: React.FC = () => {
           response = await api.post('/api/data-sources/sync/gmail');
           break;
         case 'drive':
-          response = await api.post('/api/data-sources/sync/drive');
-          break;
+          // Show Drive file selection first
+          await fetchDriveItems();
+          setShowDriveSelection(true);
+          return;
         case 'whatsapp':
           response = await api.post('/api/whatsapp/sync');
           break;
@@ -128,6 +163,22 @@ const DataSources: React.FC = () => {
     } catch (error) {
       console.error('Error syncing data source:', error);
       alert('Failed to sync data. Please try again.');
+    }
+  };
+
+  const handleDriveSync = async () => {
+    try {
+      const response = await api.post('/api/data-sources/sync/drive', {
+        selected_items: selectedDriveItems
+      });
+      alert(`Successfully synced Google Drive: ${response.data.message}`);
+      setShowDriveSelection(false);
+      setSelectedDriveItems([]);
+      fetchDataSources();
+      fetchSyncStatus();
+    } catch (error) {
+      console.error('Error syncing Drive:', error);
+      alert('Failed to sync Google Drive. Please try again.');
     }
   };
 
@@ -389,6 +440,84 @@ const DataSources: React.FC = () => {
           );
         })}
       </Grid>
+
+      {/* Drive File Selection Dialog */}
+      <Dialog 
+        open={showDriveSelection} 
+        onClose={() => setShowDriveSelection(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Select Google Drive Files and Folders to Sync</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Choose which files and folders you want to sync with Aura. Only selected items will be analyzed for property-related content.
+          </Typography>
+          
+          <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+            <List>
+              {driveItems.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Checkbox
+                        checked={selectedDriveItems.includes(item.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDriveItems([...selectedDriveItems, item.id]);
+                          } else {
+                            setSelectedDriveItems(selectedDriveItems.filter(id => id !== item.id));
+                          }
+                        }}
+                      />
+                    </ListItemIcon>
+                    <ListItemIcon>
+                      {item.type === 'folder' ? <DriveIcon /> : <DriveIcon />}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.name}
+                      secondary={
+                        <Box>
+                          <Typography variant="caption" display="block">
+                            {item.type === 'folder' ? 'Folder' : 'File'} • {item.mimeType}
+                          </Typography>
+                          {item.size !== '0' && (
+                            <Typography variant="caption" display="block">
+                              Size: {Math.round(parseInt(item.size) / 1024)} KB
+                            </Typography>
+                          )}
+                          <Typography variant="caption" display="block">
+                            Modified: {new Date(item.modifiedTime).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {index < driveItems.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+          </Box>
+          
+          {driveItems.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              No files found in your Google Drive. Make sure you have files uploaded to your Drive.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDriveSelection(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDriveSync}
+            variant="contained"
+            disabled={selectedDriveItems.length === 0}
+          >
+            Sync Selected ({selectedDriveItems.length})
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
