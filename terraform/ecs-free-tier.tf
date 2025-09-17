@@ -1,4 +1,4 @@
-# ECS Task Definitions and Services
+# ECS Task Definitions and Services - Free Tier Optimized
 
 # Backend Task Definition
 resource "aws_ecs_task_definition" "backend" {
@@ -148,7 +148,7 @@ resource "aws_ecs_task_definition" "frontend" {
   }
 }
 
-# ECS Service for Backend
+# ECS Service for Backend (in public subnets for free tier)
 resource "aws_ecs_service" "backend" {
   name            = "${var.app_name}-backend-service"
   cluster         = aws_ecs_cluster.main.id
@@ -158,8 +158,8 @@ resource "aws_ecs_service" "backend" {
 
   network_configuration {
     security_groups  = [aws_security_group.ecs.id]
-    subnets          = aws_subnet.private[*].id
-    assign_public_ip = false
+    subnets          = aws_subnet.public[*].id  # Public subnets for free tier
+    assign_public_ip = true  # Required for public subnets
   }
 
   load_balancer {
@@ -175,7 +175,7 @@ resource "aws_ecs_service" "backend" {
   }
 }
 
-# ECS Service for Frontend
+# ECS Service for Frontend (in public subnets for free tier)
 resource "aws_ecs_service" "frontend" {
   name            = "${var.app_name}-frontend-service"
   cluster         = aws_ecs_cluster.main.id
@@ -185,8 +185,8 @@ resource "aws_ecs_service" "frontend" {
 
   network_configuration {
     security_groups  = [aws_security_group.ecs.id]
-    subnets          = aws_subnet.private[*].id
-    assign_public_ip = false
+    subnets          = aws_subnet.public[*].id  # Public subnets for free tier
+    assign_public_ip = true  # Required for public subnets
   }
 
   load_balancer {
