@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import api from '../services/api';
 import { DataSource } from '../types';
+import amplitudeService from '../services/amplitudeService';
 
 interface DriveItem {
   id: string;
@@ -135,6 +136,13 @@ const DataSources: React.FC = () => {
 
   const handleSync = async (sourceType: string) => {
     try {
+      // Track sync start
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: sourceType,
+        sync_status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
       let response;
       
       switch (sourceType) {
@@ -157,20 +165,51 @@ const DataSources: React.FC = () => {
           return;
       }
       
+      // Track successful sync
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: sourceType,
+        sync_status: 'completed',
+        timestamp: new Date().toISOString()
+      });
+      
       alert(`Successfully synced ${sourceType}: ${response.data.message}`);
       fetchDataSources();
       fetchSyncStatus();
     } catch (error) {
       console.error('Error syncing data source:', error);
+      // Track sync error
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: sourceType,
+        sync_status: 'error',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
       alert('Failed to sync data. Please try again.');
     }
   };
 
   const handleDriveSync = async () => {
     try {
+      // Track Drive sync start
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'drive',
+        sync_status: 'started',
+        items_count: selectedDriveItems.length,
+        timestamp: new Date().toISOString()
+      });
+      
       const response = await api.post('/api/data-sources/sync/drive', {
         selected_items: selectedDriveItems
       });
+      
+      // Track successful Drive sync
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'drive',
+        sync_status: 'completed',
+        items_count: selectedDriveItems.length,
+        timestamp: new Date().toISOString()
+      });
+      
       alert(`Successfully synced Google Drive: ${response.data.message}`);
       setShowDriveSelection(false);
       setSelectedDriveItems([]);
@@ -178,6 +217,13 @@ const DataSources: React.FC = () => {
       fetchSyncStatus();
     } catch (error) {
       console.error('Error syncing Drive:', error);
+      // Track Drive sync error
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'drive',
+        sync_status: 'error',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
       alert('Failed to sync Google Drive. Please try again.');
     }
   };
@@ -185,12 +231,35 @@ const DataSources: React.FC = () => {
   const handleSyncAll = async () => {
     try {
       setLoading(true);
+      
+      // Track sync all start
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'all',
+        sync_status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
       const response = await api.post('/api/data-sources/sync/all');
+      
+      // Track successful sync all
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'all',
+        sync_status: 'completed',
+        timestamp: new Date().toISOString()
+      });
+      
       alert(response.data.message);
       await fetchDataSources();
       fetchSyncStatus();
     } catch (error: any) {
       console.error('Error syncing all data sources:', error);
+      // Track sync all error
+      await amplitudeService.trackEvent('Data Source Sync', {
+        source_type: 'all',
+        sync_status: 'error',
+        error_message: error.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
       alert(error.response?.data?.detail || 'Failed to sync all data sources. Please try again.');
     } finally {
       setLoading(false);

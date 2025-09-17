@@ -19,6 +19,7 @@ from app.core.security import (
 )
 from app.core.config import settings
 from app.services.google_oauth_service import GoogleOAuthService
+from app.services.amplitude_service import amplitude_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,17 @@ async def google_callback(auth_request: GoogleAuthRequest, db: Session = Depends
         )
         
         logger.info("Authentication successful!")
+        
+        # Track Google sign-in event in Amplitude
+        try:
+            await amplitude_service.track_google_signin(
+                user_id=str(db_user.id),
+                email=db_user.email,
+                name=db_user.name
+            )
+        except Exception as e:
+            logger.error(f"Failed to track Google sign-in event: {e}")
+        
         return {"access_token": access_token, "token_type": "bearer"}
         
     except Exception as e:

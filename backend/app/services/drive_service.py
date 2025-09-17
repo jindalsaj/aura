@@ -520,6 +520,47 @@ class DriveService:
         """Synchronous wrapper for sync_files to be used with background tasks"""
         import asyncio
         asyncio.run(self.sync_files(user_id, selected_items))
+    
+    def list_drive_items(self, user_id: int) -> List[Dict[str, Any]]:
+        """List all files and folders in user's Google Drive"""
+        try:
+            creds = self.get_credentials(user_id)
+            if not creds:
+                return []
+            
+            service = build('drive', 'v3', credentials=creds)
+            
+            # Get all files and folders
+            results = service.files().list(
+                pageSize=1000,
+                fields="nextPageToken, files(id, name, mimeType, parents, size, modifiedTime, webViewLink)"
+            ).execute()
+            
+            items = results.get('files', [])
+            
+            # Organize items with folder structure
+            drive_items = []
+            for item in items:
+                # Skip Google-specific files
+                if item['name'].startswith('.'):
+                    continue
+                
+                drive_items.append({
+                    'id': item['id'],
+                    'name': item['name'],
+                    'type': 'folder' if item['mimeType'] == 'application/vnd.google-apps.folder' else 'file',
+                    'mimeType': item['mimeType'],
+                    'size': item.get('size', '0'),
+                    'modifiedTime': item.get('modifiedTime', ''),
+                    'webViewLink': item.get('webViewLink', ''),
+                    'parents': item.get('parents', [])
+                })
+            
+            return drive_items
+            
+        except Exception as e:
+            print(f"Error listing Drive items: {e}")
+            return []
 
 
 # Global instance

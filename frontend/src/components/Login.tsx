@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import amplitudeService from '../services/amplitudeService';
 
 const Login: React.FC = () => {
   const [error, setError] = useState('');
@@ -18,6 +19,13 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
+    
+    // Track Google sign-in attempt
+    await amplitudeService.trackEvent('Google Sign In Attempt', {
+      signin_method: 'google',
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       await loginWithGoogle();
     } catch (err: any) {

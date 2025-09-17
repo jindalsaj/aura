@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     GOOGLE_GEMINI_API_KEY: str = ""  # Free tier available for developers
     
+    # Analytics
+    AMPLITUDE_API_KEY: str = ""
+    
     class Config:
         env_file = ".env"
 

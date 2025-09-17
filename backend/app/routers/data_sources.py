@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.models import User, DataSource
 from app.schemas import DataSourceCreate, DataSource as DataSourceSchema
 from app.core.security import get_current_user
 from app.services.gmail_service import gmail_service
 from app.services.drive_service import drive_service
+from app.services.amplitude_service import amplitude_service
+
+class DriveSyncRequest(BaseModel):
+    selected_items: Optional[List[str]] = None
 
 router = APIRouter()
 
@@ -133,10 +138,22 @@ def sync_gmail_data(
     # Start background sync
     background_tasks.add_task(gmail_service.sync_emails_sync, current_user.id)
     
+    # Track sync start event
+    try:
+        await amplitude_service.track_data_source_sync(
+            user_id=str(current_user.id),
+            source_type="gmail",
+            sync_status="started",
+            user_email=current_user.email
+        )
+    except Exception as e:
+        print(f"Failed to track Gmail sync event: {e}")
+    
     return {"message": "Gmail sync started in background"}
 
 @router.post("/sync/drive")
 def sync_drive_data(
+    request: DriveSyncRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -160,8 +177,20 @@ def sync_drive_data(
     drive_source.sync_progress = 0
     db.commit()
     
-    # Start background sync
-    background_tasks.add_task(drive_service.sync_files_sync, current_user.id)
+    # Start background sync with selected items
+    background_tasks.add_task(drive_service.sync_files_sync, current_user.id, request.selected_items)
+    
+    # Track sync start event
+    try:
+        await amplitude_service.track_data_source_sync(
+            user_id=str(current_user.id),
+            source_type="drive",
+            sync_status="started",
+            items_count=len(request.selected_items) if request.selected_items else None,
+            user_email=current_user.email
+        )
+    except Exception as e:
+        print(f"Failed to track Drive sync event: {e}")
     
     return {"message": "Google Drive sync started in background"}
 
@@ -213,3 +242,32 @@ def get_sync_status(
         }
     
     return sync_status
+
+@router.get("/drive/items")
+def list_drive_items(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all files and folders in user's Google Drive"""
+    try:
+        # Check if user has Drive connected
+        drive_source = db.query(DataSource).filter(
+            DataSource.user_id == current_user.id,
+            DataSource.source_type == "drive",
+            DataSource.is_active == True
+        ).first()
+        
+        if not drive_source:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google Drive not connected"
+            )
+        
+        items = drive_service.list_drive_items(current_user.id)
+        return {"items": items}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list Drive items: {str(e)}"
+        )

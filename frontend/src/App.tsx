@@ -13,6 +13,7 @@ import Properties from './components/Properties';
 import DataSources from './components/DataSources';
 import Onboarding from './components/Onboarding';
 import Layout from './components/Layout';
+import PageTracker from './components/PageTracker';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -31,6 +32,7 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
+          <PageTracker />
           <Routes>
             <Route path="/login" element={
               <PublicRoute>
