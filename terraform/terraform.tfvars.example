@@ -1,0 +1,23 @@
+# Terraform variables for Aura AWS deployment
+# Copy this file to terraform.tfvars and fill in your actual values
+
+aws_region = "us-east-1"
+app_name   = "aura"
+environment = "production"
+
+# Your domain name (e.g., "yourapp.com")
+domain_name = "yourdomain.com"
+
+# Database password (use a strong password)
+postgres_password = "your-secure-postgres-password"
+
+# Application secret key (generate a strong random key)
+secret_key = "your-very-secure-secret-key"
+
+# API Keys (get these from your service providers)
+amplitude_api_key = "your-amplitude-api-key"
+google_client_id = "your-google-client-id"
+google_client_secret = "your-google-client-secret"
+plaid_client_id = "your-plaid-client-id"
+plaid_secret = "your-plaid-secret"
+openai_api_key = "your-openai-api-key"

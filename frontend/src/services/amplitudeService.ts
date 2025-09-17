@@ -1,5 +1,5 @@
 // Amplitude tracking service for frontend
-const AMPLITUDE_API_KEY = '32508d20fbb76ee720aade9a896e02e0';
+const AMPLITUDE_API_KEY = process.env.REACT_APP_AMPLITUDE_API_KEY || '';
 const AMPLITUDE_ENDPOINT = 'https://api2.amplitude.com/2/httpapi';
 
 interface AmplitudeEvent {
