@@ -116,31 +116,7 @@ aura/
 └── README.md
 ```
 
-## Development Roadmap
 
-### Milestone 1: Backend & Data Ingestion (4-6 weeks)
-- [x] Project setup and basic API structure
-- [ ] Gmail OAuth2 connector
-- [ ] WhatsApp API integration
-- [ ] Plaid bank API integration
-- [ ] Google Drive integration
-- [ ] Entity extraction pipeline
-
-### Milestone 2: Conversational MVP (3-4 weeks)
-- [ ] LLM integration for Q&A
-- [ ] Chat interface improvements
-- [ ] Mobile app (React Native)
-
-### Milestone 3: Dashboard & Docs (3 weeks)
-- [ ] Property dashboard
-- [ ] Document browser
-- [ ] Service provider profiles
-
-### Milestone 4: Privacy & Security (2-3 weeks)
-- [ ] Consent flows
-- [ ] Data retention policies
-- [ ] Security hardening
-- [ ] Feedback tracking
 
 ## Contributing
 
